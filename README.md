@@ -63,8 +63,8 @@ Create the relevant geojsons according to the level of generalisation and name a
 
 6. Run the tippecanoe script, check that the tiles folder has been populated with tile files.
 
-7. Launch deno server - `deno run --allow-net --allow-read server.ts`
-NB you may want to add a specific port to the deno server call in server.ts, such as `{ port: 8501 }`
-NB You can add the `--watch` flag if you want to watch for changes and see them updated in teh map output without needing to relaunch the server.
+7. Launch deno server - `deno run --allow-net --allow-read server.ts`  
+NB you may want to add a specific port to the deno server call in server.ts, such as `{ port: 8501 }`  
+NB You can add the `--watch` flag if you want to watch for changes and see them updated in the map output without needing to relaunch the server.
 
 8. Provided you have set the relevant security settings for inbound requests on your EC2 instance, it should now just be a case of going to: `ec2_ip_address:port` to see the web map.
