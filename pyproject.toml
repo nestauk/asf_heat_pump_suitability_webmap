@@ -1,0 +1,15 @@
+[project]
+name = "asf-heat-pump-suitability-webmap"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "dash>=2.18.2",
+    "dash-leaflet>=1.0.15",
+    "fastapi>=0.115.6",
+    "folium>=0.19.4",
+    "geopandas>=1.0.1",
+    "osmium>=4.0.2",
+    "uvicorn>=0.34.0",
+]
