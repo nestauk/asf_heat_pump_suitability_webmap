@@ -14,6 +14,10 @@ var mapBaseLayer = L.tileLayer(
     }
 ).addTo(map);
 
+var baseMaps = {
+    "OpenStreetMap": mapBaseLayer,
+};
+
 // get vector tiles URL
 var mapUrl = "tiles/{z}/{x}/{y}.pbf";
 
@@ -31,24 +35,26 @@ function getColor(d) {
 }
         
 // define styling of vector tiles
-var vectorTileStyling = {
-    hps_lsoas: function(properties, zoom) {
-        var weight = 0;
-        if (zoom > 12) {
-            weight = 1.0;
+function vectorTileStyling(layername){
+    return {
+        hps_lsoas: function(properties, zoom) {
+            var weight = 0;
+            if (zoom > 12) {
+                weight = 1.0;
+            }
+            return ({
+                fill: true,
+                fillColor: getColor(properties[layername]),
+                fillOpacity: 0.9,
+                weight: weight,
+                color: "#ffffff",
+                opacity: 1.0,
+            });
         }
-        return ({
-            fill: true,
-            fillColor: getColor(properties.ashp_n_suit_class),
-            fillOpacity: 0.9,
-            weight: weight,
-            color: "#ffffff",
-            opacity: 1.0,
-        });
     }
 }
 
-// define options of vector tiles - basic outlines.
+// define options template for vector tiles.
 var mapVectorTileOptions = {
     rendererFactory: L.canvas.tile,
     interactive: true,
@@ -58,58 +64,110 @@ var mapVectorTileOptions = {
     attribution: '(C) Nesta',
     maxNativeZoom: 15,
     minZoom: 6,
-    vectorTileLayerStyles: vectorTileStyling,
+    vectorTileLayerStyles: null,
 };
+
+// Set up layers
+// ASHP Nesta
+mapVectorTileOptions['vectorTileLayerStyles'] = vectorTileStyling("ashp_n_suit_class");
+var ashp_nesta_map_layer = new L.VectorGrid.Protobuf(
+    mapUrl, mapVectorTileOptions
+)
+ashp_nesta_map_layer.on({click: simplePopUp("ashp_n_suit_class"),
+    mouseover: highlightFeature(ashp_nesta_map_layer, "ashp_n_suit_class"),
+    mouseout: resetHighlight(ashp_nesta_map_layer),
+});
+// ASHP Standard
+mapVectorTileOptions['vectorTileLayerStyles'] = vectorTileStyling("ashp_s_suit_class");
+var ashp_standard_map_layer = new L.VectorGrid.Protobuf(
+    mapUrl, mapVectorTileOptions
+)
+ashp_standard_map_layer.on({click: simplePopUp("ashp_s_suit_class"),
+    mouseover: highlightFeature(ashp_standard_map_layer, "ashp_s_suit_class"),
+    mouseout: resetHighlight(ashp_standard_map_layer),
+});
+
+// Load Nesta map as standard
+ashp_nesta_map_layer.addTo(map)
+
+// Create initial layer control
+var layerControl = L.control.layers(baseMaps, {"Nesta ASHP Suitability": ashp_nesta_map_layer}).addTo(map);
+
+// Create initial opacity control
+var opacityControl = L.control.opacity({"Nesta ASHP Suitability": ashp_nesta_map_layer}, {label: 'Layer Opacity', }).addTo(map);
+
+// Set up layer selection
+var layer_mapping = {'0': ashp_nesta_map_layer, '1': ashp_standard_map_layer}
+
+var layer_name_mapping = {'0': "ashp_n_suit_class", '1': "ashp_s_suit_class"}
+
+var control_name_mapping = {'0': "Nesta ASHP Suitability", '1': "Standard ASHP Suitability"}
+
+var layerselect = document.getElementById("layer-select");
+
+layerselect.addEventListener("change", change_vector_layer);
+
+function change_vector_layer() {
+        // first remove current layer
+        if (map.hasLayer(ashp_nesta_map_layer)) {
+            map.removeLayer(ashp_nesta_map_layer)
+        }
+        if (map.hasLayer(ashp_standard_map_layer)) {
+            map.removeLayer(ashp_standard_map_layer)
+        }
+
+        // Remove current layer control
+        layerControl.remove();
+        // Remove current opacity control
+        opacityControl.remove()
+
+        mapVectorTileOptions['vectorTileLayerStyles'] = vectorTileStyling(layer_name_mapping[layerselect.value]);
+       
+        // add VectorGrid layer to map
+        layer_mapping[layerselect.value].addTo(map);
+        
+        // Overlays
+        var overlayMaps = {
+            [control_name_mapping[layerselect.value]]: layer_mapping[layerselect.value],
+        };
+
+        // add layer control
+        layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
+        
+        //OpacityControl
+        opacityControl = L.control.opacity(overlayMaps, {label: 'Layer Opacity', }).addTo(map);
+    }
 
 L.DomEvent.fakeStop = function () {
     return true;
   }
 
-function simplePopUp(event){
-    L.popup()
-    .setContent(`Class is:${event.layer.properties.ashp_n_suit_class}`)
-    .setLatLng(event.latlng)
-    .openOn(map);}
+// curried function to enable parameters
+function simplePopUp(layername) {
+        return function curried_simplePopUp(event) {
+            L.popup()
+            .setContent(`Class is:${event.layer.properties[layername]}`)
+            .setLatLng(event.latlng)
+            .openOn(map);}
+        }
 
-function highlightFeature(event){
-    console.log(event)
+function highlightFeature(layer, layername){
+    return function curried_highlightFeature(event) {
     if (event.target._map._zoom > 10){
-    mapPbfLayer.setFeatureStyle(event.layer.properties.LSOA21CD,
+    layer.setFeatureStyle(event.layer.properties.LSOA21CD,
         {
             fill: true,
-            fillColor: getColor(event.layer.properties.ashp_n_suit_class),
+            fillColor: getColor(event.layer.properties[layername]),
             fillOpacity: 0.3,
             weight: 1,
             color: "#ffffff",
             opacity: 1.0,
         })}
 }
-
-function resetHighlight(event){
-    mapPbfLayer.resetFeatureStyle(event.layer.properties.LSOA21CD)
 }
 
-// create VectorGrid layer
-var mapPbfLayer = new L.VectorGrid.Protobuf(
-    mapUrl, mapVectorTileOptions
-).on({click: simplePopUp,
-      mouseover: highlightFeature,
-      mouseout: resetHighlight,
-    });
-
-// add VectorGrid layer to map
-mapPbfLayer.addTo(map);
-
-var baseMaps = {
-    "OpenStreetMap": mapBaseLayer,
-};
-
-var overlayMaps = {
-    "ASHP Nesta": mapPbfLayer,
-};
-
-//LayerControl
-var layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
-
-//OpacityControl
-var opacityControl = L.control.opacity(overlayMaps, {label: 'Layers Opacity', }).addTo(map);
+function resetHighlight(layer) {
+    return function curried_resetHighlight(event){
+        layer.resetFeatureStyle(event.layer.properties.LSOA21CD)
+    }
+}

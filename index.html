@@ -25,6 +25,13 @@
 <body style='margin:0'>
     <!-- div containing map -->
     <div id="map" style="width: 100vw; height: 100vh; background: #fdfdfd"></div>
+    <!-- div containing select dropdown -->
+    <div style="width:200px;position: absolute;top: 1vh;left: 10vw;z-index: 999">
+        <select id="layer-select">
+          <option value="0">Nesta ASHP Suitability</option>
+          <option value="1">Standard ASHP Suitability</option>
+        </select>
+      </div>
     <!-- specification of leaflet map -->
     <script src="./main.js"></script>
 </body>
