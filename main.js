@@ -37,7 +37,7 @@ function getColor(d) {
 // define styling of vector tiles
 function vectorTileStyling(layername){
     return {
-        hps_lsoas: function(properties, zoom) {
+        hps_areas: function(properties, zoom) {
             var weight = 0;
             if (zoom > 12) {
                 weight = 1.0;
@@ -59,7 +59,7 @@ var mapVectorTileOptions = {
     rendererFactory: L.canvas.tile,
     interactive: true,
     getFeatureId: function(f) {
-        return f.properties.LSOA21CD;
+        return f.properties.area_code;
     },
     attribution: '(C) Nesta',
     maxNativeZoom: 15,
@@ -154,7 +154,7 @@ function simplePopUp(layername) {
 function highlightFeature(layer, layername){
     return function curried_highlightFeature(event) {
     if (event.target._map._zoom > 10){
-    layer.setFeatureStyle(event.layer.properties.LSOA21CD,
+    layer.setFeatureStyle(event.layer.properties.area_code,
         {
             fill: true,
             fillColor: getColor(event.layer.properties[layername]),
@@ -168,6 +168,6 @@ function highlightFeature(layer, layername){
 
 function resetHighlight(layer) {
     return function curried_resetHighlight(event){
-        layer.resetFeatureStyle(event.layer.properties.LSOA21CD)
+        layer.resetFeatureStyle(event.layer.properties.area_code)
     }
 }

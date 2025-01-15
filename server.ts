@@ -1,7 +1,7 @@
 import { typeByExtension } from "https://deno.land/std/media_types/mod.ts";
 import { extname } from "https://deno.land/std/path/mod.ts";
 
-Deno.serve(async req => {
+Deno.serve({'port': 8501}, async req => {
     let path = new URL(req.url).pathname;
 
     if(path.endsWith("/")){
