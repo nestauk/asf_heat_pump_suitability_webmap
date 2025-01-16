@@ -22,6 +22,7 @@ var baseMaps = {
 var mapUrl = "tiles/{z}/{x}/{y}.pbf";
 
 // function mapping of colors to signature type
+/*
 function getColor(d) {
     return d > 8 ? '#081d58' :
         d > 7  ? '#253494' :
@@ -32,6 +33,13 @@ function getColor(d) {
         d > 2   ? '#c7e9b4' :
         d > 1   ? '#edf8b1' :
                   '#ffffd9';
+}
+*/
+
+// Get colour from colormap and return as hex colours.
+function getCmapColor(d) {
+    [r, g, b] = evaluate_cmap(d, 'coolwarm', false)
+    return rgbToHex(r, g, b)
 }
         
 // define styling of vector tiles
@@ -44,7 +52,8 @@ function vectorTileStyling(layername){
             }
             return ({
                 fill: true,
-                fillColor: getColor(properties[layername]),
+                //fillColor: getColor(properties[layername]),
+                fillColor: getCmapColor(properties[layername]),
                 fillOpacity: 0.9,
                 weight: weight,
                 color: "#ffffff",
@@ -69,21 +78,21 @@ var mapVectorTileOptions = {
 
 // Set up layers
 // ASHP Nesta
-mapVectorTileOptions['vectorTileLayerStyles'] = vectorTileStyling("ashp_n_suit_class");
+mapVectorTileOptions['vectorTileLayerStyles'] = vectorTileStyling("ASHP_N_avg_score_weighted");
 var ashp_nesta_map_layer = new L.VectorGrid.Protobuf(
     mapUrl, mapVectorTileOptions
 )
-ashp_nesta_map_layer.on({click: simplePopUp("ashp_n_suit_class"),
-    mouseover: highlightFeature(ashp_nesta_map_layer, "ashp_n_suit_class"),
+ashp_nesta_map_layer.on({click: simplePopUp("ASHP_N_avg_score_weighted"),
+    mouseover: highlightFeature(ashp_nesta_map_layer, "ASHP_N_avg_score_weighted"),
     mouseout: resetHighlight(ashp_nesta_map_layer),
 });
 // ASHP Standard
-mapVectorTileOptions['vectorTileLayerStyles'] = vectorTileStyling("ashp_s_suit_class");
+mapVectorTileOptions['vectorTileLayerStyles'] = vectorTileStyling("ASHP_S_avg_score_weighted");
 var ashp_standard_map_layer = new L.VectorGrid.Protobuf(
     mapUrl, mapVectorTileOptions
 )
-ashp_standard_map_layer.on({click: simplePopUp("ashp_s_suit_class"),
-    mouseover: highlightFeature(ashp_standard_map_layer, "ashp_s_suit_class"),
+ashp_standard_map_layer.on({click: simplePopUp("ASHP_S_avg_score_weighted"),
+    mouseover: highlightFeature(ashp_standard_map_layer, "ASHP_S_avg_score_weighted"),
     mouseout: resetHighlight(ashp_standard_map_layer),
 });
 
@@ -99,7 +108,7 @@ var opacityControl = L.control.opacity({"Nesta ASHP Suitability": ashp_nesta_map
 // Set up layer selection
 var layer_mapping = {'0': ashp_nesta_map_layer, '1': ashp_standard_map_layer}
 
-var layer_name_mapping = {'0': "ashp_n_suit_class", '1': "ashp_s_suit_class"}
+var layer_name_mapping = {'0': "ASHP_N_avg_score_weighted", '1': "ASHP_S_avg_score_weighted"}
 
 var control_name_mapping = {'0': "Nesta ASHP Suitability", '1': "Standard ASHP Suitability"}
 
@@ -146,7 +155,7 @@ L.DomEvent.fakeStop = function () {
 function simplePopUp(layername) {
         return function curried_simplePopUp(event) {
             L.popup()
-            .setContent(`Class is:${event.layer.properties[layername]}`)
+            .setContent(`Suitability is:${event.layer.properties[layername]}`)
             .setLatLng(event.latlng)
             .openOn(map);}
         }
