@@ -29,10 +29,18 @@
     <!-- div containing map -->
     <div id="map" style="width: 100vw; height: 100vh; background: #fdfdfd"></div>
     <!-- div containing select dropdown -->
-    <div style="width:200px;position: absolute;top: 1vh;left: 10vw;z-index: 999">
+    <div style="appearance: none;width:200px;position: absolute;top: 2vh;left: 9vw;z-index:999;font-size:1.15rem;">
         <select id="layer-select">
+          <optgroup label="Map Layers">
           <option value="0">Nesta ASHP Suitability</option>
           <option value="1">Standard ASHP Suitability</option>
+          <option value="2">Nesta GSHP Suitability</option>
+          <option value="3">Standard GSHP Suitability</option>
+          <option value="4">Nesta SGL Suitability</option>
+          <option value="5">Standard SGL Suitability</option>
+          <option value="6">Nesta HN Suitability</option>
+          <option value="7">Standard HN Suitability</option>
+        </optgroup>
         </select>
       </div>
     <!-- specification of leaflet map -->
