@@ -170,3 +170,35 @@ function resetHighlight(layer) {
         layer.resetFeatureStyle(event.layer.properties.area_code)
     }
 }
+
+
+
+var arrayRange = (start, stop, step) =>
+    Array.from(
+    { length: (stop - start) / step + 1 },
+    (value, index) => start + index * step
+    );
+
+var legend = L.control({position: 'bottomright'});
+
+legend.onAdd = function (map) {
+
+    var div = L.DomUtil.create('div', 'info legend');
+    var grades = arrayRange(1, 0, -0.01);
+
+    div.innerHTML += "<h4>Suitability<br><br><br><br><br><br><br>Score<h4><br><br>"
+    // loop through our density intervals and generate a label with a colored square for each interval
+    for (let value of grades) {
+        if (value === 0) {
+            div.innerHTML += '<i style="background:' + getCmapColor(value) + '"></i> 0 <br>'
+        } else if (value === 1) {
+            div.innerHTML += '<i style="background:' + getCmapColor(value) + '"></i> 1 <br>'
+        } else {
+            div.innerHTML += '<i style="background:' + getCmapColor(value) + '"></i><br>'
+    }
+}
+
+    return div;
+};
+
+legend.addTo(map);
