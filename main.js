@@ -26,13 +26,13 @@ var baseMaps = {
 var mapUrl = "tiles/{z}/{x}/{y}.pbf";
 
 // Get colour from colormap and return as hex colours.
-function getCmapColor(d) {
-    [r, g, b] = evaluate_cmap(d, 'coolwarm', false)
+function getCmapColor(d, colormap) {
+    [r, g, b] = evaluate_cmap(d, colormap, false)
     return rgbToHex(r, g, b)
 }
         
 // define styling of vector tiles
-function vectorTileStyling(layername){
+function vectorTileStyling(layername, colormap='coolwarm'){
     return {
         hps_areas: function(properties, zoom) {
             var weight = 0;
@@ -42,7 +42,7 @@ function vectorTileStyling(layername){
             return ({
                 fill: true,
                 //fillColor: getColor(properties[layername]),
-                fillColor: getCmapColor(properties[layername]),
+                fillColor: getCmapColor(properties[layername], colormap),
                 fillOpacity: 0.9,
                 weight: weight,
                 color: "#ffffff",
@@ -72,10 +72,17 @@ const layer_names = [
     'SGL_N_avg_score_weighted', 'SGL_S_avg_score_weighted', 
     'HN_N_avg_score_weighted', 'HN_S_avg_score_weighted'];
 
-var layers = new Map();
+const layer_colormaps = {
+    'ASHP_N_avg_score_weighted': 'Blues', 'ASHP_S_avg_score_weighted': 'Blues',
+    'GSHP_N_avg_score_weighted': 'Greens', 'GSHP_S_avg_score_weighted': 'Greens', 
+    'SGL_N_avg_score_weighted': 'Purples', 'SGL_S_avg_score_weighted': 'Purples', 
+    'HN_N_avg_score_weighted': 'Greens', 'HN_S_avg_score_weighted': 'Greens'
+}
 
+// Collect layers in map object
+var layers = new Map();
 for (let layer_name of layer_names) {
-    mapVectorTileOptions['vectorTileLayerStyles'] = vectorTileStyling(layer_name);
+    mapVectorTileOptions['vectorTileLayerStyles'] = vectorTileStyling(layer_name, layer_colormaps[layer_name]);
     let layer = new L.VectorGrid.Protobuf(
         mapUrl, mapVectorTileOptions
     )
@@ -85,7 +92,9 @@ for (let layer_name of layer_names) {
 
 // Set default starting layer
 layers.get('ASHP_N_avg_score_weighted').on({click: simplePopUp('ASHP_N_avg_score_weighted'),
-    mouseover: highlightFeature(layers.get('ASHP_N_avg_score_weighted'), 'ASHP_N_avg_score_weighted'),
+    mouseover: highlightFeature(layers.get('ASHP_N_avg_score_weighted'),
+                                'ASHP_N_avg_score_weighted',
+                                layer_colormaps['ASHP_N_avg_score_weighted']),
     mouseout: resetHighlight(layers.get('ASHP_N_avg_score_weighted')),
 });
 
@@ -98,6 +107,7 @@ var layerControl = L.control.layers(baseMaps, {"Nesta ASHP Suitability": layers.
 // Create initial opacity control
 var opacityControl = L.control.opacity({"Nesta ASHP Suitability": layers.get('ASHP_N_avg_score_weighted')}, {label: 'Layer Opacity', }).addTo(map);
 
+// NB could make the select values these values?
 var control_name_mapping = {
     '0': "Nesta ASHP Suitability", '1': "Standard ASHP Suitability",
     '2': "Nesta GSHP Suitability", '3': "Standard GSHP Suitability",
@@ -118,9 +128,13 @@ function change_vector_layer() {
         layerControl.remove();
         // Remove current opacity control
         opacityControl.remove()
+        // Remove current legend control
+        legend.remove()
 
         layers.get(layer_names[layerselect.value]).on({click: simplePopUp(layer_names[layerselect.value]),
-            mouseover: highlightFeature(layers.get(layer_names[layerselect.value]), layer_names[layerselect.value]),
+            mouseover: highlightFeature(layers.get(layer_names[layerselect.value]),
+                                                   layer_names[layerselect.value],
+                                                   layer_colormaps[layer_names[layerselect.value]]),
             mouseout: resetHighlight(layers.get(layer_names[layerselect.value])),
         });
         
@@ -138,7 +152,15 @@ function change_vector_layer() {
         //OpacityControl
         opacityControl = L.control.opacity(overlayMaps, {label: 'Layer Opacity', }).addTo(map);
 
+        // legend
+        legend = L.control({position: 'bottomright'});
+
+        legend.onAdd = create_colormap_legend(layer_colormaps[layer_names[layerselect.value]])
+
+        legend.addTo(map);
+
         currentlayer = layerselect.value;
+
     }
 
 // curried function to enable parameters
@@ -150,13 +172,13 @@ function simplePopUp(layername) {
             .openOn(map);}
         }
 
-function highlightFeature(layer, layername){
+function highlightFeature(layer, layername, colormap){
     return function curried_highlightFeature(event) {
     if (event.target._map._zoom > 10){
     layer.setFeatureStyle(event.layer.properties.area_code,
         {
             fill: true,
-            fillColor: getCmapColor(event.layer.properties[layername]),
+            fillColor: getCmapColor(event.layer.properties[layername], colormap),
             fillOpacity: 0.3,
             weight: 1,
             color: "#ffffff",
@@ -171,8 +193,6 @@ function resetHighlight(layer) {
     }
 }
 
-
-
 var arrayRange = (start, stop, step) =>
     Array.from(
     { length: (stop - start) / step + 1 },
@@ -181,24 +201,26 @@ var arrayRange = (start, stop, step) =>
 
 var legend = L.control({position: 'bottomright'});
 
-legend.onAdd = function (map) {
+legend.onAdd = create_colormap_legend(layer_colormaps[layer_names[0]])
 
-    var div = L.DomUtil.create('div', 'info legend');
-    var grades = arrayRange(1, 0, -0.01);
-
-    div.innerHTML += "<h4>Suitability<br><br><br><br><br><br><br>Score<h4><br><br>"
-    // loop through our density intervals and generate a label with a colored square for each interval
-    for (let value of grades) {
-        if (value === 0) {
-            div.innerHTML += '<i style="background:' + getCmapColor(value) + '"></i> 0 <br>'
-        } else if (value === 1) {
-            div.innerHTML += '<i style="background:' + getCmapColor(value) + '"></i> 1 <br>'
-        } else {
-            div.innerHTML += '<i style="background:' + getCmapColor(value) + '"></i><br>'
+function create_colormap_legend(colormap){
+    return function curried_onAdd (map) {
+        var div = L.DomUtil.create('div', 'info legend');
+        var grades = arrayRange(1, 0, -0.01);
+        
+        div.innerHTML += "<h4>Suitability<br><br><br><br><br><br><br>Score<h4><br><br>"
+        // loop through our density intervals and generate a label with a colored square for each interval
+        for (let value of grades) {
+            if (value === 0) {
+                div.innerHTML += '<i style="background:' + getCmapColor(value, colormap) + '"></i> 0 <br>'
+            } else if (value === 1) {
+                div.innerHTML += '<i style="background:' + getCmapColor(value, colormap) + '"></i> 1 <br>'
+            } else {
+                div.innerHTML += '<i style="background:' + getCmapColor(value, colormap) + '"></i><br>'
+        }
     }
-}
-
     return div;
-};
+}
+}
 
 legend.addTo(map);
