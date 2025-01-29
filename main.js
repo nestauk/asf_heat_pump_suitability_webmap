@@ -13,7 +13,7 @@ var mapBaseLayer = L.tileLayer(
         attribution: '(C) OpenStreetMap contributors (C) CARTO'
     }
 ).addTo(map);
-
+    
 L.DomEvent.fakeStop = function () {
     return true;
   }
@@ -76,7 +76,7 @@ const layer_colormaps = {
     'ASHP_N_avg_score_weighted': 'Blues', 'ASHP_S_avg_score_weighted': 'Blues',
     'GSHP_N_avg_score_weighted': 'Greens', 'GSHP_S_avg_score_weighted': 'Greens', 
     'SGL_N_avg_score_weighted': 'Purples', 'SGL_S_avg_score_weighted': 'Purples', 
-    'HN_N_avg_score_weighted': 'Greens', 'HN_S_avg_score_weighted': 'Greens'
+    'HN_N_avg_score_weighted': 'Oranges', 'HN_S_avg_score_weighted': 'Oranges'
 }
 
 // Collect layers in map object
