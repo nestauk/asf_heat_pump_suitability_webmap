@@ -13,7 +13,7 @@ var mapBaseLayer = L.tileLayer(
         attribution: '(C) OpenStreetMap contributors (C) CARTO'
     }
 ).addTo(map);
-
+    
 L.DomEvent.fakeStop = function () {
     return true;
   }
@@ -76,7 +76,7 @@ const layer_colormaps = {
     'ASHP_N_avg_score_weighted': 'Blues', 'ASHP_S_avg_score_weighted': 'Blues',
     'GSHP_N_avg_score_weighted': 'Greens', 'GSHP_S_avg_score_weighted': 'Greens', 
     'SGL_N_avg_score_weighted': 'Purples', 'SGL_S_avg_score_weighted': 'Purples', 
-    'HN_N_avg_score_weighted': 'Greens', 'HN_S_avg_score_weighted': 'Greens'
+    'HN_N_avg_score_weighted': 'Oranges', 'HN_S_avg_score_weighted': 'Oranges'
 }
 
 // Collect layers in map object
@@ -163,14 +163,46 @@ function change_vector_layer() {
 
     }
 
+const layername_to_tech = {
+    'ASHP_N_avg_score_weighted': 'Air Source Heat Pump', 'ASHP_S_avg_score_weighted': 'Air Source Heat Pump',
+    'GSHP_N_avg_score_weighted': 'Ground Source Heat Pump', 'GSHP_S_avg_score_weighted': 'Ground Source Heat Pump', 
+    'SGL_N_avg_score_weighted': 'Shared Ground Loop', 'SGL_S_avg_score_weighted': 'Shared Ground Loop', 
+    'HN_N_avg_score_weighted': 'Heat Network', 'HN_S_avg_score_weighted': 'Heat Network'
+}
+
+const layername_to_source = {
+    'ASHP_N_avg_score_weighted': 'Nesta', 'ASHP_S_avg_score_weighted': 'Conventional',
+    'GSHP_N_avg_score_weighted': 'Nesta', 'GSHP_S_avg_score_weighted': 'Conventional', 
+    'SGL_N_avg_score_weighted': 'Nesta', 'SGL_S_avg_score_weighted': 'Conventional', 
+    'HN_N_avg_score_weighted': 'Nesta', 'HN_S_avg_score_weighted': 'Conventional'
+}
+
+const geography_name = {'England': 'an LSOA', 'Wales': 'an LSOA', 'Scotland': 'a DataZone'}
+
+function pop_up_content(layername, suitability, context){
+    let pop_up_string = `\
+    <p>The ${layername_to_source[layername]} <b>${layername_to_tech[layername]}</b> Suitability Score for ${context['area_name']} is: <b>${suitability}</b>.</p>
+    <p>This area is ${geography_name[context['country']]} in ${context['la_name']}, ${context['country']}. It belongs to the \
+    ${context['uk_pc_name']} UK Parliamentary Constituency.</p>
+    `
+    return pop_up_string
+}
+
 // curried function to enable parameters
 function simplePopUp(layername) {
         return function curried_simplePopUp(event) {
-            L.popup()
-            .setContent(`Suitability is:${event.layer.properties[layername]}`)
-            .setLatLng(event.latlng)
-            .openOn(map);}
-        }
+
+            fetch(`http://127.0.0.1:8000/areas/${event.layer.properties['area_code']}`)
+                 .then(function(response) {
+                    return response.json()
+                })
+                 .then(function(responseData) {
+                    L.popup()
+                    .setContent(pop_up_content(layername, event.layer.properties[layername], responseData))
+                    .setLatLng(event.latlng)
+                    .openOn(map);
+                })
+        }}
 
 function highlightFeature(layer, layername, colormap){
     return function curried_highlightFeature(event) {
