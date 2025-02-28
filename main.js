@@ -59,7 +59,7 @@ var mapVectorTileOptions = {
     getFeatureId: function(f) {
         return f.properties.area_code;
     },
-    attribution: '(C) Nesta',
+    attribution: '',
     maxNativeZoom: 15,
     minZoom: 6,
     vectorTileLayerStyles: null,
@@ -102,10 +102,10 @@ layers.get('ASHP_N_avg_score_weighted').on({click: simplePopUp('ASHP_N_avg_score
 layers.get('ASHP_N_avg_score_weighted').addTo(map)
 
 // Create initial layer control
-var layerControl = L.control.layers(baseMaps, {"Nesta ASHP Suitability": layers.get('ASHP_N_avg_score_weighted')}).addTo(map);
+//var layerControl = L.control.layers(baseMaps, {"Nesta ASHP Suitability": layers.get('ASHP_N_avg_score_weighted')}).addTo(map);
 
 // Create initial opacity control
-var opacityControl = L.control.opacity({"Nesta ASHP Suitability": layers.get('ASHP_N_avg_score_weighted')}, {label: 'Layer Opacity', }).addTo(map);
+var opacityControl = L.control.opacity({"Nesta ASHP Suitability": layers.get('ASHP_N_avg_score_weighted')}, ).addTo(map);
 
 // NB could make the select values these values?
 var control_name_mapping = {
@@ -125,7 +125,7 @@ function change_vector_layer() {
         }
 
         // Remove current layer control
-        layerControl.remove();
+        //layerControl.remove();
         // Remove current opacity control
         opacityControl.remove()
         // Remove current legend control
@@ -147,10 +147,10 @@ function change_vector_layer() {
         };
 
         // add layer control
-        layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
+        //layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
         
         //OpacityControl
-        opacityControl = L.control.opacity(overlayMaps, {label: 'Layer Opacity', }).addTo(map);
+        opacityControl = L.control.opacity(overlayMaps, ).addTo(map);
 
         // legend
         legend = L.control({position: 'bottomright'});
@@ -224,6 +224,35 @@ function resetHighlight(layer) {
         layer.resetFeatureStyle(event.layer.properties.area_code)
     }
 }
+
+L.controlCredits({
+    imageurl: './Leaflet-Control-Credits/Nesta_Logo_Blue_RGB.png',
+    imagealt: 'Nesta logo',
+    tooltip: 'Made by Nesta',
+    width: '88px',
+    height: '42px',
+    expandcontent: '<a href="#" id="show-info">See information<br/>about the map.</a><br/>',
+}).addTo(map);
+
+var converter = new showdown.Converter()
+
+$('#show-info').on('click', function(e) {
+    let options = {size: [ 300, 300 ],
+        minSize: [ 100, 100 ],
+        maxSize: [ 350, 350 ],
+        anchor: [ 250, 250 ],
+        position: "topleft",
+        initOpen: true}
+    
+    const fileUrl = './dialog_box.md'
+
+    fetch(fileUrl)
+        .then( r => r.text() )
+        .then( t => L.control.dialog(options)
+        .setContent(converter.makeHtml(t))
+        .addTo(map))
+
+});
 
 var arrayRange = (start, stop, step) =>
     Array.from(
