@@ -1,10 +1,10 @@
  // create map
  var map = L.map('map', {
-    center: [53, -1.9],
+    center: [54.6, -4],
     minZoom: 6,
     maxZoom: 15,
     zoomControl: true,
-    zoom: 7,
+    zoom: 6,
 });
 
 // add background basemap
@@ -23,12 +23,19 @@ var baseMaps = {
 };
 
 // get vector tiles URL
-var mapUrl = "tiles/{z}/{x}/{y}.pbf";
+var mapUrl = "./tiles/{z}/{x}/{y}.pbf";
 
 // Get colour from colormap and return as hex colours.
 function getCmapColor(d, colormap) {
-    [r, g, b] = evaluate_cmap(d, colormap, false)
-    return rgbToHex(r, g, b)
+    try {
+        [r, g, b] = evaluate_cmap(d, colormap, false)
+        return rgbToHex(r, g, b)
+    }
+    catch(err) {
+        if (d > 1) {d = 1}
+        [r, g, b] = evaluate_cmap(d, colormap, false)
+        return rgbToHex(r, g, b)
+    }
 }
         
 // define styling of vector tiles
@@ -50,6 +57,25 @@ function vectorTileStyling(layername, colormap='coolwarm'){
             });
         }
     }
+}
+
+// converter for markdown to html, used in the pop up.
+var converter = new showdown.Converter()
+
+const geography_name = {'England': 'an LSOA', 'Wales': 'an LSOA', 'Scotland': 'a DataZone'}
+
+const layername_to_tech = {
+    'ASHP_N_avg_score_weighted': 'Air Source Heat Pump', 'ASHP_S_avg_score_weighted': 'Air Source Heat Pump',
+    'GSHP_N_avg_score_weighted': 'Ground Source Heat Pump', 'GSHP_S_avg_score_weighted': 'Ground Source Heat Pump', 
+    'SGL_N_avg_score_weighted': 'Shared Ground Loop', 'SGL_S_avg_score_weighted': 'Shared Ground Loop', 
+    'HN_N_avg_score_weighted': 'Heat Network', 'HN_S_avg_score_weighted': 'Heat Network'
+}
+
+const layername_to_source = {
+    'ASHP_N_avg_score_weighted': 'Nesta', 'ASHP_S_avg_score_weighted': 'Conventional',
+    'GSHP_N_avg_score_weighted': 'Nesta', 'GSHP_S_avg_score_weighted': 'Conventional', 
+    'SGL_N_avg_score_weighted': 'Nesta', 'SGL_S_avg_score_weighted': 'Conventional', 
+    'HN_N_avg_score_weighted': 'Nesta', 'HN_S_avg_score_weighted': 'Conventional'
 }
 
 // define options template for vector tiles.
@@ -105,14 +131,14 @@ layers.get('ASHP_N_avg_score_weighted').addTo(map)
 //var layerControl = L.control.layers(baseMaps, {"Nesta ASHP Suitability": layers.get('ASHP_N_avg_score_weighted')}).addTo(map);
 
 // Create initial opacity control
-var opacityControl = L.control.opacity({"Nesta ASHP Suitability": layers.get('ASHP_N_avg_score_weighted')}, ).addTo(map);
+var opacityControl = L.control.opacity({"Air Source Heat Pump (ASHP) Suitability": layers.get('ASHP_N_avg_score_weighted')}, ).addTo(map);
 
 // NB could make the select values these values?
 var control_name_mapping = {
-    '0': "Nesta ASHP Suitability", '1': "Standard ASHP Suitability",
-    '2': "Nesta GSHP Suitability", '3': "Standard GSHP Suitability",
-    '4': "Nesta SGL Suitability", '5': "Standard SGL Suitability",
-    '6': "Nesta HN Suitability", '7': "Standard HN Suitability"}
+    '0': "Air Source Heat Pump (ASHP) Suitability", '1': "Standard ASHP Suitability",
+    '2': "Ground Source Heat Pump (GSHP) Suitability", '3': "Standard GSHP Suitability",
+    '4': "Shared Ground Loop (SGL) Suitability", '5': "Standard SGL Suitability",
+    '6': "Heat Network Suitability", '7': "Standard HN Suitability"}
 
 var layerselect = document.getElementById("layer-select");
 var currentlayer = layerselect.value
@@ -163,22 +189,6 @@ function change_vector_layer() {
 
     }
 
-const layername_to_tech = {
-    'ASHP_N_avg_score_weighted': 'Air Source Heat Pump', 'ASHP_S_avg_score_weighted': 'Air Source Heat Pump',
-    'GSHP_N_avg_score_weighted': 'Ground Source Heat Pump', 'GSHP_S_avg_score_weighted': 'Ground Source Heat Pump', 
-    'SGL_N_avg_score_weighted': 'Shared Ground Loop', 'SGL_S_avg_score_weighted': 'Shared Ground Loop', 
-    'HN_N_avg_score_weighted': 'Heat Network', 'HN_S_avg_score_weighted': 'Heat Network'
-}
-
-const layername_to_source = {
-    'ASHP_N_avg_score_weighted': 'Nesta', 'ASHP_S_avg_score_weighted': 'Conventional',
-    'GSHP_N_avg_score_weighted': 'Nesta', 'GSHP_S_avg_score_weighted': 'Conventional', 
-    'SGL_N_avg_score_weighted': 'Nesta', 'SGL_S_avg_score_weighted': 'Conventional', 
-    'HN_N_avg_score_weighted': 'Nesta', 'HN_S_avg_score_weighted': 'Conventional'
-}
-
-const geography_name = {'England': 'an LSOA', 'Wales': 'an LSOA', 'Scotland': 'a DataZone'}
-
 function pop_up_content(layername, suitability, context){
     let pop_up_string = `\
     <p>The ${layername_to_source[layername]} <b>${layername_to_tech[layername]}</b> Suitability Score for ${context['area_name']} is: <b>${suitability}</b>.</p>
@@ -191,8 +201,8 @@ function pop_up_content(layername, suitability, context){
 // curried function to enable parameters
 function simplePopUp(layername) {
         return function curried_simplePopUp(event) {
-
-            fetch(`http://127.0.0.1:8000/areas/${event.layer.properties['area_code']}`)
+            if (event.target._map._zoom > 10){
+            fetch(`/areas/${event.layer.properties['area_code']}`)
                  .then(function(response) {
                     return response.json()
                 })
@@ -202,7 +212,7 @@ function simplePopUp(layername) {
                     .setLatLng(event.latlng)
                     .openOn(map);
                 })
-        }}
+        }}}
 
 function highlightFeature(layer, layername, colormap){
     return function curried_highlightFeature(event) {
@@ -225,16 +235,26 @@ function resetHighlight(layer) {
     }
 }
 
+// Information button
+L.controlCredits({
+    position: 'bottomleft',
+    imageurl: './Leaflet-Control-Credits/info.svg',
+    imagealt: 'Information icon',
+    tooltip: 'Information about the map.',
+    width: '30px',
+    height: '30px',
+    expandcontent: '<a href="#" id="show-info">See information<br/>about the map</a><br/>',
+}).addTo(map);
+
+// Nesta logo
 L.controlCredits({
     imageurl: './Leaflet-Control-Credits/Nesta_Logo_Blue_RGB.png',
     imagealt: 'Nesta logo',
     tooltip: 'Made by Nesta',
     width: '88px',
     height: '42px',
-    expandcontent: '<a href="#" id="show-info">See information<br/>about the map.</a><br/>',
+    expandcontent: 'Interactive mapping<br/>by <a href="https://www.nesta.org.uk/" target="_blank">Nesta</a>',
 }).addTo(map);
-
-var converter = new showdown.Converter()
 
 $('#show-info').on('click', function(e) {
     let options = {size: [ 300, 300 ],

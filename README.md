@@ -47,13 +47,16 @@ Then the script should look something like:
 ```{shell}
 #! /bin/bash
 
-tippecanoe -z8 -Z0 --no-tile-compression -l hps_lsoas --output-to-directory="../asf_heat_pump_suitability_webmap/tiles" --detect-shared-borders --reorder --hilbert -f "../geojson/most_generalised_lsoas.geojson"
-echo "Most generalised tiles generated!"
+tippecanoe -z4 -Z0 --no-tile-compression -l hps_areas --output-to-directory="../asf_heat_pump_suitability_webmap/tiles" --detect-shared-borders --reorder --hilbert --no-tile-size-limit -f "../geojson/ultra_generalised_areas.geojson"
+echo "Ultra generalised tiles generated!"
 
-tippecanoe -z12 -Z9 --no-tile-compression -l hps_lsoas --output-to-directory="../asf_heat_pump_suitability_webmap/tiles" --detect-shared-borders --reorder --hilbert -F "../geojson/generalised_lsoas.geojson"
+tippecanoe -z8 -Z5 --no-tile-compression -l hps_areas --output-to-directory="../asf_heat_pump_suitability_webmap/tiles" --detect-shared-borders --reorder --hilbert --no-tile-size-limit -F "../geojson/super_generalised_areas.geojson"
+echo "Super generalised tiles generated!"
+
+tippecanoe -z12 -Z9 --no-tile-compression -l hps_areas --output-to-directory="../asf_heat_pump_suitability_webmap/tiles" --detect-shared-borders --reorder --hilbert --no-tile-size-limit -F "../geojson/generalised_areas.geojson"
 echo "Generalised tiles generated!"
 
-tippecanoe -z15 -Z13 --no-tile-compression -l hps_lsoas --output-to-directory="../asf_heat_pump_suitability_webmap/tiles" --detect-shared-borders --reorder --hilbert -F "../geojson/detailed_lsoas.geojson"
+tippecanoe -z15 -Z13 --no-tile-compression -l hps_areas --output-to-directory="../asf_heat_pump_suitability_webmap/tiles" --detect-shared-borders --reorder --hilbert --no-tile-size-limit -F "../geojson/detailed_lsoas.geojson"
 echo "Detailed tiles generated!"
 ```
 5. Generate and upload the relevant geojsons to the EC2 instance.
