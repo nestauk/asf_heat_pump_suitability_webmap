@@ -165,7 +165,7 @@ function change_vector_layer() {
         });
         
         // add VectorGrid layer to map
-        layers.get(layer_names[layerselect.value]).addTo(map);
+        layers.get(layer_names[layerselect.value]).setZIndex(50).addTo(map);
         
         // Overlays
         var overlayMaps = {
@@ -212,7 +212,19 @@ function simplePopUp(layername) {
                     .setLatLng(event.latlng)
                     .openOn(map);
                 })
-        }}}
+            } else if (event.target._map._zoom <= 10 && map.hasLayer(lad_layer)){
+                fetch(`/areas/${event.layer.properties['area_code']}`)
+                 .then(function(response) {
+                    return response.json()
+                })
+                 .then(function(responseData) {
+                    L.popup()
+                    .setContent(responseData['la_name'])
+                    .setLatLng(event.latlng)
+                    .openOn(map);
+                })
+            }
+    }}
 
 function highlightFeature(layer, layername, colormap){
     return function curried_highlightFeature(event) {
@@ -305,3 +317,44 @@ function create_colormap_legend(colormap){
 }
 
 legend.addTo(map);
+
+// Testing adding local authority districts as tiles
+
+// get vector tiles URL
+var ladUrl = "./lad_tiles/{z}/{x}/{y}.pbf";
+
+var ladVectorTileOptions = {
+    rendererFactory: L.canvas.tile,
+    interactive: false,
+    getFeatureId: function(f) {
+        return f.properties.LAD24CD;
+    },
+    attribution: '',
+    maxNativeZoom: 15,
+    minZoom: 6,
+    vectorTileLayerStyles: {
+        lads: function(properties, zoom) {
+            
+            var color = "#C0C0C0";
+            var weight = 0.67
+            if (zoom > 12) {
+                //color = "#708090";
+                weight = 3.5;
+            }
+            return ({
+                fill: false,
+                weight: weight,
+                color: color,
+            });
+        }
+    }
+};
+
+let lad_layer = new L.VectorGrid.Protobuf(
+    ladUrl, ladVectorTileOptions
+)
+
+lad_layer.setZIndex(99).addTo(map);
+
+// add layer control
+layerControl = L.control.layers({}, {'Local Authority District': lad_layer}).addTo(map);

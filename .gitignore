@@ -2,4 +2,5 @@ __pycache__
 .venv/
 .vscode/
 tiles/
+lad_tiles/
 *.db
